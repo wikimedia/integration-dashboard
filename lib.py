@@ -114,6 +114,7 @@ def configure(ini_file=None):
                 'SKINS_DIR': '/data/project/ci/src/skins',
                 'SRC': '/data/project/ci/src',
                 'MEDIAWIKI_DIR': '/data/project/ci/src/mediawiki',
+                'ZUUL_SERVER': '/data/project/ci/py2-venv2/bin/zuul-server'
             }})
         else:
             # Legoktm's laptop
@@ -124,11 +125,17 @@ def configure(ini_file=None):
                 'SKINS_DIR': '/home/km/projects/vagrant/mediawiki/skins',
                 'SRC': '/home/km/projects',
                 'MEDIAWIKI_DIR': '/home/km/projects/vagrant/mediawiki',
+                'ZUUL_SERVER': '/home/km/python/bin/zuul-server'
             }})
 
     global ON_LABS
     ON_LABS = conf['tools-ci'].getboolean('ON_LABS')
-    for var in ['EXTENSIONS_DIR', 'SKINS_DIR', 'SRC', 'MEDIAWIKI_DIR']:
+    for var in [
+            'EXTENSIONS_DIR',
+            'SKINS_DIR',
+            'SRC',
+            'MEDIAWIKI_DIR',
+            'ZUUL_SERVER']:
         globals()[var] = conf['tools-ci'].get(var)
 
 ON_LABS = None
@@ -136,5 +143,6 @@ EXTENSIONS_DIR = None
 SKINS_DIR = None
 SRC = None
 MEDIAWIKI_DIR = None
+ZUUL_SERVER = None
 
 configure()

@@ -18,17 +18,17 @@ def main():
         cidir = os.path.join(lib.SRC, 'integration/config')
 
     if lib.ON_LABS:
-        zuul_server = '/data/project/ci/py2-venv2/bin/zuul-server'
         lib.git_pull(cidir)
-    else:
-        zuul_server = '/home/km/python/bin/zuul-server'
     config = os.path.join(cidir, 'zuul/layout.yaml')
 
     ZUUL_OUTPUT = os.path.join(cidir, 'zuul/output')  # noqa
     PROJECTS = ('mediawiki/extensions/', 'mediawiki/skins/')
 
     f = tempfile.NamedTemporaryFile(delete=False)
-    subprocess.call([zuul_server, '-t', '-l', config], stderr=f)
+    zuul_cmd = lib.ZUUL_SERVER.split()
+    zuul_cmd.extend(['-t', '-l', config])
+
+    subprocess.call(zuul_cmd, stderr=f)
     f.close()
     with open(f.name) as rf:
         lines = rf.read().splitlines()
