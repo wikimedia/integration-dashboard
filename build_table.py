@@ -3,6 +3,7 @@
 from collections import defaultdict, OrderedDict
 import glob
 import os
+import os.path
 
 import lib
 import pywikibot
@@ -113,16 +114,18 @@ if lib.ON_LABS:
 
 reader.add_repo('MediaWiki core', 'mediawiki')
 
-composer_paths = {'mediawiki': lib.MEDIAWIKI_DIR + '/' + 'composer.json'}
-package_paths = {'mediawiki': lib.MEDIAWIKI_DIR + '/' + 'package.json'}
+composer_paths = {'mediawiki': os.path.join(lib.MEDIAWIKI_DIR,
+                                            'composer.json')}
+package_paths = {'mediawiki': os.path.join(lib.MEDIAWIKI_DIR,
+                                           'package.json')}
 
 for repo in OTHER_STUFF:
-    path = lib.SRC + '/' + repo
+    path = os.path.join(lib.SRC, repo)
     if lib.ON_LABS:
         lib.git_pull(path)
     reader.add_repo(repo, repo)
-    composer = path + '/' + 'composer.json'
-    package = path + '/' + 'package.json'
+    composer = os.path.join(path, 'composer.json')
+    package = os.path.join(path, 'package.json')
     if os.path.exists(composer):
         composer_paths[repo] = composer
     if os.path.exists(package):
@@ -130,7 +133,7 @@ for repo in OTHER_STUFF:
 
 for repo_type, glob_path in {'Extension': lib.EXTENSIONS_DIR,
                              'Skin': lib.SKINS_DIR}.items():
-    composers = glob.glob(glob_path + '/*/composer.json')
+    composers = glob.glob(os.path.join(glob_path, '*/composer.json'))
     repo_name = lambda x: 'mediawiki-%s-%s' % (repo_type.lower() + 's', x)
     for composer in composers:
         ext_name = composer.split('/')[-2]
@@ -141,7 +144,7 @@ for repo_type, glob_path in {'Extension': lib.EXTENSIONS_DIR,
     for repo, path in composer_paths.items():
         reader.read_composer(path, repo)
 
-    packages = glob.glob(glob_path + '/*/package.json')
+    packages = glob.glob(os.path.join(glob_path, '*/package.json'))
     for package in packages:
         ext_name = package.split('/')[-2]
         repo = repo_name(ext_name)

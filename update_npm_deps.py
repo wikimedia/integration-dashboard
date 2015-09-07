@@ -4,12 +4,11 @@ from collections import OrderedDict
 import glob
 import json
 import os
+import os.path
 import subprocess
 import sys
 
 import lib
-
-EXTENSIONS = '/home/km/projects/vagrant/mediawiki/extensions'
 
 if len(sys.argv) > 1:
     extension = sys.argv[1]
@@ -53,9 +52,9 @@ def update(package_json):
                         topic='bump-dev-deps')
 
 if extension == 'mediawiki':
-    packages = ['/home/km/projects/vagrant/mediawiki/package.json']
+    packages = [os.path.join(lib.MEDIAWIKI_DIR, 'package.json')]
 else:
-    packages = glob.glob(EXTENSIONS + '/*/package.json')
+    packages = glob.glob(os.path.join(lib.EXTENSIONS_DIR, '*/package.json'))
 for package in sorted(packages):
     ext_name = package.split('/')[-2]
     if extension and extension != ext_name:

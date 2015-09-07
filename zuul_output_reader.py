@@ -2,6 +2,7 @@
 
 from collections import defaultdict
 import os
+import os.path
 import subprocess
 import tempfile
 
@@ -9,15 +10,20 @@ import lib
 
 
 def main():
+
+    cidir = os.path.join(lib.SRC, 'integration-config')
+    if not os.path.exists(cidir):
+        # Standard layout
+        cidir = os.path.join(lib.SRC, 'integration/config')
+
     if lib.ON_LABS:
         zuul_server = '/data/project/ci/py2-venv2/bin/zuul-server'
-        lib.git_pull('/data/project/ci/src/integration-config')
-        config = '/data/project/ci/src/integration-config/zuul/layout.yaml'
+        lib.git_pull(cidir)
     else:
         zuul_server = '/home/km/python/bin/zuul-server'
-        config = '/home/km/projects/integration-config/zuul/layout.yaml'
+    config = os.path.join(cidir, 'zuul/layout.yaml')
 
-    ZUUL_OUTPUT = '/home/km/projects/integration-config/zuul/output'  # noqa
+    ZUUL_OUTPUT = os.path.join(cidir, 'zuul/output')  # noqa
     PROJECTS = ('mediawiki/extensions/', 'mediawiki/skins/')
 
     f = tempfile.NamedTemporaryFile(delete=False)

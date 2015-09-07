@@ -4,12 +4,13 @@ from collections import OrderedDict
 import glob
 import json
 import os
+import os.path
 import subprocess
 import sys
 
 import lib
 
-EXTENSIONS = '/home/km/projects/vagrant/mediawiki/extensions'
+
 PACKAGES = [
     'jakub-onderka/php-parallel-lint',
     'mediawiki/mediawiki-codesniffer',
@@ -65,11 +66,16 @@ def update(composer_json):
                         branch='master', topic='bump-dev-deps')
 
 if extension == 'mediawiki':
-    packages = ['/home/km/projects/vagrant/mediawiki/composer.json']
-elif os.path.exists('/home/km/projects/' + extension + '/composer.json'):
-    packages = ['/home/km/projects/' + extension + '/composer.json']
+    packages = [os.path.join(lib.MEDIAWIKI_DIR, 'composer.json')]
 else:
-    packages = glob.glob(EXTENSIONS + '/*/composer.json')
+    ext_composer_file = os.path.join(lib.SRC, extension, 'composer.json')
+    if os.path.exists(ext_composer_file):
+        packages = [ext_composer_file]
+    else:
+        # Fallback to all extensions
+        packages = glob.glob(
+            os.path.join(lib.EXTENSIONS_DIR, '*/composer.json'))
+
 for package in sorted(packages):
     ext_name = package.split('/')[-2]
     if extension and extension != ext_name:
