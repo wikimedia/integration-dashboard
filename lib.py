@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
+import argparse
 import codecs
+import configparser
 import functools
 import json
 import os
@@ -49,21 +51,6 @@ def commit_and_push(files, msg, branch, topic, push=True):
         print(' '.join(push_cmd))
     os.unlink(f.name)
 
-if os.path.isdir('/data/project/ci'):
-    # Running on Tool labs
-    ON_LABS = True
-    EXTENSIONS_DIR = '/data/project/ci/src/extensions'
-    SKINS_DIR = '/data/project/ci/src/skins'
-    SRC = '/data/project/ci/src'
-    MEDIAWIKI_DIR = '/data/project/ci/src/mediawiki'
-else:
-    # Legoktm's laptop
-    ON_LABS = False
-    EXTENSIONS_DIR = '/home/km/projects/vagrant/mediawiki/extensions'
-    SKINS_DIR = '/home/km/projects/vagrant/mediawiki/skins'
-    SRC = '/home/km/projects'
-    MEDIAWIKI_DIR = '/home/km/projects/vagrant/mediawiki'
-
 
 def git_pull(path, update_submodule=False):
     subprocess.check_call(['git', '-C', path, 'pull'])
@@ -95,3 +82,59 @@ def get_wmf_deployed_list():
 
 def is_wmf_deployed(github_name):
     return github_name in get_wmf_deployed_list()
+
+
+def cli_config():
+    """Handles CLI arguments and initialize configuration
+
+    Returns: (list) unhandled arguments
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--conf', dest='conffile', default=None,
+                        help='tools-ci .ini file')
+    parser.add_argument('remainding', nargs=argparse.REMAINDER)
+    args = parser.parse_args()
+    configure(args.conffile)
+
+    return args.remainding
+
+
+def configure(ini_file=None):
+
+    conf = configparser.ConfigParser()
+    if ini_file:
+        with open(ini_file, 'r'):
+            conf.read(ini_file)
+    else:
+        if os.path.isdir('/data/project/ci'):
+            # Running on Tool labs
+            conf.read_dict({'tools-ci': {
+                'ON_LABS': True,
+                'EXTENSIONS_DIR': '/data/project/ci/src/extensions',
+                'SKINS_DIR': '/data/project/ci/src/skins',
+                'SRC': '/data/project/ci/src',
+                'MEDIAWIKI_DIR': '/data/project/ci/src/mediawiki',
+            }})
+        else:
+            # Legoktm's laptop
+            conf.read_dict({'tools-ci': {
+                'ON_LABS': False,
+                'EXTENSIONS_DIR':
+                    '/home/km/projects/vagrant/mediawiki/extensions',
+                'SKINS_DIR': '/home/km/projects/vagrant/mediawiki/skins',
+                'SRC': '/home/km/projects',
+                'MEDIAWIKI_DIR': '/home/km/projects/vagrant/mediawiki',
+            }})
+
+    global ON_LABS
+    ON_LABS = conf['tools-ci'].getboolean('ON_LABS')
+    for var in ['EXTENSIONS_DIR', 'SKINS_DIR', 'SRC', 'MEDIAWIKI_DIR']:
+        globals()[var] = conf['tools-ci'].get(var)
+
+ON_LABS = None
+EXTENSIONS_DIR = None
+SKINS_DIR = None
+SRC = None
+MEDIAWIKI_DIR = None
+
+configure()

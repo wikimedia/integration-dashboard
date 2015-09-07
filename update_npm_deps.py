@@ -6,12 +6,12 @@ import json
 import os
 import os.path
 import subprocess
-import sys
 
 import lib
+argv = lib.cli_config()
 
-if len(sys.argv) > 1:
-    extension = sys.argv[1]
+if len(argv) > 1:
+    extension = argv[1]
 else:
     extension = None
 

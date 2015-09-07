@@ -9,6 +9,8 @@ import lib
 import pywikibot
 import zuul_output_reader
 
+lib.cli_config()
+
 COMPOSER = OrderedDict([
     ('phplint', 'jakub-onderka/php-parallel-lint'),
     ('phpunit', 'phpunit/phpunit'),

@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 
 import lib
+lib.cli_config()
 
 
 def main():
