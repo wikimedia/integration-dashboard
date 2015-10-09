@@ -6,6 +6,7 @@ import os
 import os.path
 
 import lib
+import lib.pm
 import pywikibot
 import zuul_output_reader
 
@@ -29,6 +30,10 @@ class Reader:
     def __init__(self):
         self.data = defaultdict(lambda: defaultdict(dict))
         self.repos = {}
+        self.managers = {
+            'composer': lib.pm.Composer(dev_deps=COMPOSER.values()),
+            'npm': lib.pm.Npm(dev_deps=NPM.values()),
+        }
 
     def add_repo(self, display_name, github_name):
         self.repos[github_name] = {
@@ -43,22 +48,6 @@ class Reader:
         if lib.is_wmf_deployed(info['github']):
             text += ' (WMF-deployed)'
         return text
-
-    def read_composer(self, path, github_name):
-        info = lib.json_load(path)
-        if 'require-dev' in info:
-            for job in COMPOSER.values():
-                version = info['require-dev'].get(job)
-                if version:
-                    self.data[github_name][job]['version'] = version
-
-    def read_npm(self, path, github_name):
-        info = lib.json_load(path)
-        if 'devDependencies' in info:
-            for job in NPM.values():
-                version = info['devDependencies'].get(job)
-                if version:
-                    self.data[github_name][job]['version'] = version
 
     def read_zuul(self, info, github_name):
         #if github_name != 'mediawiki-extensions-Echo':
@@ -94,9 +83,7 @@ class Reader:
                         'color': color
                     }
 
-
 reader = Reader()
-
 
 OTHER_STUFF = [
     'AhoCorasick',
@@ -116,45 +103,33 @@ if lib.ON_LABS:
 
 reader.add_repo('MediaWiki core', 'mediawiki')
 
-composer_paths = {'mediawiki': os.path.join(lib.MEDIAWIKI_DIR,
-                                            'composer.json')}
-package_paths = {'mediawiki': os.path.join(lib.MEDIAWIKI_DIR,
-                                           'package.json')}
-
 for repo in OTHER_STUFF:
     path = os.path.join(lib.SRC, repo)
     if lib.ON_LABS:
         lib.git_pull(path)
     reader.add_repo(repo, repo)
-    composer = os.path.join(path, 'composer.json')
-    package = os.path.join(path, 'package.json')
-    if os.path.exists(composer):
-        composer_paths[repo] = composer
-    if os.path.exists(package):
-        package_paths[repo] = package
 
-for repo_type, glob_path in {'Extension': lib.EXTENSIONS_DIR,
-                             'Skin': lib.SKINS_DIR}.items():
-    composers = glob.glob(os.path.join(glob_path, '*/composer.json'))
-    repo_name = lambda x: 'mediawiki-%s-%s' % (repo_type.lower() + 's', x)
-    for composer in composers:
-        ext_name = composer.split('/')[-2]
-        repo = repo_name(ext_name)
-        reader.add_repo(repo_type + ':%s' % ext_name, repo)
-        composer_paths[repo] = composer
+for pm_name, manager in reader.managers.items():
 
-    for repo, path in composer_paths.items():
-        reader.read_composer(path, repo)
+    reader.data['mediawiki'].update(
+        manager.dev_versions(lib.MEDIAWIKI_DIR))
 
-    packages = glob.glob(os.path.join(glob_path, '*/package.json'))
-    for package in packages:
-        ext_name = package.split('/')[-2]
-        repo = repo_name(ext_name)
-        reader.add_repo(repo_type + ':%s' % ext_name, repo)
-        package_paths[repo] = package
+    for repo_type, glob_path in {'Extension': lib.EXTENSIONS_DIR,
+                                 'Skin': lib.SKINS_DIR}.items():
 
-    for repo, path in package_paths.items():
-        reader.read_npm(path, repo)
+        repo_name = lambda x: 'mediawiki-%s-%s' % (repo_type.lower() + 's', x)
+
+        files = glob.glob(os.path.join(glob_path, '*', manager.file_name))
+        for f in files:
+            ext_name = f.split('/')[-2]
+            repo = repo_name(ext_name)
+            reader.add_repo(repo_type + ':%s' % ext_name, repo)
+            reader.data[repo].update(manager.dev_versions(f))
+
+    for repo in OTHER_STUFF:
+        pm_file = os.path.join(lib.SRC, repo, manager.file_name)
+        if os.path.exists(pm_file):
+            reader.data[repo].update(manager.dev_versions(pm_file))
 
 zuul_data = zuul_output_reader.main()
 for repo, info in zuul_data.items():
@@ -220,7 +195,6 @@ for repo_path in paths:
         text += '|%s\n' % (color + add)
 text += '|}'
 
-#print(text)
 site = pywikibot.Site('mediawiki', 'mediawiki')
 page = pywikibot.Page(site, 'User:Legoktm/ci')
 pywikibot.showDiff(page.text, text)
