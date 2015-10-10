@@ -172,7 +172,7 @@ data = reader.data
 header = """
 {{/Header}}
 {|class="wikitable sortable"
-! rowspan="2" |Extension
+! rowspan="2" |Project
 ! colspan="%s" |composer
 ! colspan="%s" |npm
 |-
